@@ -6,6 +6,8 @@ import psycopg2
 import psycopg2.extras
 import bcrypt
 from datetime import timedelta
+from tavily import TavilyClient
+TAVILY_API_KEY = os.environ.get("TAVILY_API_KEY", "")
 
 app = Flask(__name__, static_folder='static')
 app.secret_key = os.environ.get("SECRET_KEY", "change_this_secret_key_123!")
@@ -210,17 +212,34 @@ def save_message(chat_id):
     except Exception as e: return jsonify({"error": str(e)}), 500
 
 # ── Groq ──
+
 @app.route("/chat-api", methods=["POST"])
 def chat_api():
     if "user_id" not in session: return jsonify({"error": "Unauthorized"}), 401
     data = request.json
     messages = data.get("messages", [])
     if not messages: return jsonify({"error": "No messages"}), 400
+
+    # Search web for latest info
+    web_context = ""
+    try:
+        if TAVILY_API_KEY:
+            tavily = TavilyClient(api_key=TAVILY_API_KEY)
+            last_message = messages[-1]["content"]
+            search = tavily.search(query=last_message, max_results=3)
+            web_context = "\n".join([f"- {r['content']}" for r in search["results"]])
+    except:
+        pass
+
+    system_prompt = "You are a helpful, friendly assistant. Answer clearly and concisely."
+    if web_context:
+        system_prompt += f"\n\nLatest web information:\n{web_context}\n\nUse this to answer with current 2026 data."
+
     try:
         res = requests.post(GROQ_API_URL,
             headers={"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"},
             json={"model": "llama-3.3-70b-versatile",
-                  "messages": [{"role":"system","content":"You are a helpful, friendly assistant. Answer clearly and concisely."}, *messages],
+                  "messages": [{"role":"system","content": system_prompt}, *messages],
                   "temperature": 0.7, "max_tokens": 1024},
             timeout=60)
         result = res.json()
