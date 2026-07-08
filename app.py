@@ -18,7 +18,7 @@ CF_TURNSTILE_SECRET = os.environ.get("CF_TURNSTILE_SECRET", "your_turnstile_secr
 DATABASE_URL        = os.environ.get("DATABASE_URL", "")
 
 def get_db():
-    return psycopg2.connect(DATABASE_URL)
+    return psycopg2.connect(DATABASE_URL, sslmode='require')
 
 def init_db():
     conn = get_db()
