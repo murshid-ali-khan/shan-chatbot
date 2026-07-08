@@ -226,7 +226,13 @@ def chat_api():
         if TAVILY_API_KEY:
             tavily = TavilyClient(api_key=TAVILY_API_KEY)
             last_message = messages[-1]["content"]
-            search = tavily.search(query=last_message, max_results=3)
+            keywords = ["today", "now", "current", "2024", "2025", "2026", "2027" 
+                        "latest", "news", "price", "score", "winner", "recent"]
+            should_search = any(k in last_message.lower() for k in keywords)
+            
+            if should_search:
+                search = tavily.search(query=last_message, max_results=3)
+            
             web_context = "\n".join([f"- {r['content']}" for r in search["results"]])
     except:
         pass
