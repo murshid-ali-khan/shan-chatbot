@@ -227,6 +227,24 @@ def chat_api():
             return jsonify({"error": result.get("error",{}).get("message","API error")}), 500
         return jsonify({"reply": result["choices"][0]["message"]["content"]})
     except Exception as e: return jsonify({"error": str(e)}), 500
-
+@app.route("/admin/stats")
+def admin_stats():
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT COUNT(*) FROM users")
+    users = cur.fetchone()[0]
+    cur.execute("SELECT COUNT(*) FROM chats")
+    chats = cur.fetchone()[0]
+    cur.execute("SELECT COUNT(*) FROM messages")
+    messages = cur.fetchone()[0]
+    cur.execute("SELECT username, email, created_at FROM users ORDER BY created_at DESC")
+    user_list = cur.fetchall()
+    cur.close(); conn.close()
+    return jsonify({
+        "total_users": users,
+        "total_chats": chats,
+        "total_messages": messages,
+        "users": [{"username": u[0], "email": u[1], "joined": str(u[2])} for u in user_list]
+    })
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=False)
