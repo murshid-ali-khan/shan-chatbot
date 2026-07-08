@@ -248,4 +248,4 @@ def admin_stats():
         "users": [{"username": u[0], "email": u[1], "joined": str(u[2])} for u in user_list]
     })
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)), debug=False)
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)), debug=False)
